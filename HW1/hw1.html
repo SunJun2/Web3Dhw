@@ -4,25 +4,59 @@
 
 <head>
 <style>
+#info
+{
+  position: absolute;
+  top: 10px;
+  left:10px;
+  width: 100%;
+  padding: 5px;
+  
+  font-size:40px;
+}
 
+body {
+  overflow: hidden;
+}
+body{
+  background-image: url( 'https://cdn.pixabay.com/photo/2021/10/05/21/42/christmas-6683805_960_720.png' );
+  background-repeat:no-repeat;
+  background-attachment: fixed;
+  background-position: center;
+  background-size: cover;
+
+    }
 
 </style>
 </head>
 
 <body> 
-<h1> Hw1 Helper</h1>
+<div id='bkgd' style="position:absolute; top: 30vh; left: 40vw; width:20vw; height: 20vh;"> </div>
 
-<div id='bkgd' style="position:absolute; top: 10vh; left: 10vw; width:60vw; height: 60vh; background-Color: pink"></div>
+<div id="info">Hw1 Xmas Lights with HTML & CSS<br>
+
+<button id="toggle"  onclick="switchLight()">Switch </button>
+<button id="dutyCycleSwitch" onclick="changeDutyCycle()">Mode</button>
+
+
+
+</div>
 
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 
 <script>
+
+
+
 class Lamp {
 
   constructor(name) {
     this.name = name + Lamp.id++;
     this.myStatus = false;
-    
+    this.dutyCycle=0.5
+    this.mySwitch = 1;
+    this.switchInterval
+
     let el = document.createElement ('div');
     el.id = this.name;
     let text = document.createTextNode (name + ' is OFF');
@@ -52,18 +86,72 @@ class Lamp {
   }
 
   startBlink() {
+
     var that = this;
-    setInterval(function() {
-      that.toggle();
-    }, 500);
+    this.switchInterval=setInterval(function() {that.toggle();}, this.dutyCycle*1000);
+
   }
+  
+//////////////////////////////
+switch(a){
+var that = this;
+if(a == 1)
+ {
+   that.startBlink();
+ }
+else
+ {
+     clearInterval(this.switchInterval);
+      if (this.myStatus == true) 
+      {
+        that.toggle();
+      }
+ }
+
+}
+changeMode(a) {
+  if(a == 1)
+    this.dutyCycle = this.dutyCycle*Math.random();
+  else
+    this.dutyCycle=0.5
+  }
+
 }
 
 
+
+var light = [];
+var  on = 0;
+function switchLight() {
+
+  if(on == 1) 
+  on = 0;
+  else  if(on == 0)
+  on = 1;
+
+  light.forEach((item) => {
+    item.switch(on);
+  });
+}
+var  change = 0;
+function changeDutyCycle() {
+
+  if(change == 1) 
+  change = 0;
+  else  if(change == 0)
+  change = 1;
+
+  light.forEach((item) => {
+    item.changeMode(change);
+  });
+}
+
 Lamp.id = 0; // class variable
-for (let i = 0; i < 3; i++) {
+for (let i = 0; i < 8; i++) {
    let ll = new Lamp ('light');
-   ll.startBlink();
+   light.push(ll);
+  
+   //ll.startBlink();
 }
 
 
