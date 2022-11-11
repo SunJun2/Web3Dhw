@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-tw">
+
+  <head>
+  
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="cache-control" content="no-cache">
+    
+    <style>
+.header {
+  text-align: center;
+  font-size: 5vmin;
+  padding: 2vmin;
+}
+
+.title {
+  color: white;
+  text-align: center;
+  font-size: 5vmin;
+}
+
+body {
+  overflow: hidden;
+}
+
+    </style>
+  </head>
+  <body>
+
+<div class="header" id="myHeader">HW3:室內設計模型(1) 
+  <a href="https://i.imgur.com/iQMFt6n.png" >平面設計圖</a>
+  <br>
+  <a href="#" onclick="setViewPoint(1)">view1</a>
+  <a href="#" onclick="setViewPoint(2)">view2</a>
+  <a href="#" id="SwitchLight">SwitchLight</a>
+  <div class="title">調整亮度</div>
+  <input type="range" min="0" max="500" value="250" id="brightnessRange">
+</div>
+
+<script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+<script>
+ 
+class lights {
+  constructor(position,target){
+    this.myStatus = true;
+    this.brightness = 100;
+    this.spotLight = new THREE.SpotLight(0xffffff, this.brightness/10 , 300, Math.PI /10, 1);
+    this.spotLight.position.set(position.x, position.y, position.z);
+    this.spotLight.target = target;
+    scene.add(this.spotLight);
+  }
+  changeBrightness(brightness) {
+    if (brightness <= 0) {
+      this.myStatus = false;
+      document.querySelector('#brightnessRange').value = 0;
+      this.spotLight.intensity = 0;
+    } else {
+      this.myStatus = true;
+      this.brightness = brightness;
+      this.spotLight.intensity = this.brightness / 30;
+      document.querySelector('#brightnessRange').value = this.brightness;
+    }
+  }
+  toggle() {
+    this.myStatus = !this.myStatus;
+    if (this.myStatus === true) {
+      if (this.brightness <= 5) {
+        this.changeBrightness(50);
+      } else {
+        this.changeBrightness(this.brightness);
+      }
+    } else {
+      this.changeBrightness(0);
+    }
+  }
+}
+
+function createLight(position, target) {
+  let temp = new lights(position, target);
+  lightArray.push(temp);
+}
+
+function switchLight() {
+  lightArray.forEach((item) => {
+    item.toggle();
+  });
+}
+
+function changeBrightness(brightness) {
+  lightArray.forEach((item) => {
+    item.changeBrightness(brightness);
+  });
+}
+
+document.querySelector('#SwitchLight').onclick = function() {
+  switchLight();
+};
+document.querySelector('#brightnessRange').oninput = function() {
+  changeBrightness(this.value);
+};
+
+function buildBench() {
+  var group = new THREE.Group();
+  
+  var benchTex = new THREE.TextureLoader().load("https://i.imgur.com/WEymGvu.jpg");
+  benchTex.repeat.set(4, 4);
+  benchTex.wrapS = THREE.RepeatWrapping;
+  benchTex.wrapT = THREE.RepeatWrapping;
+  
+  var benchMaterial = new THREE.MeshLambertMaterial({
+    map: benchTex
+  });
+  
+  var bench = new THREE.Mesh(new THREE.BoxGeometry(40, 2, 15), benchMaterial);
+  var benchLeg1 = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 15), benchMaterial);
+  var benchLeg2 = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 15), benchMaterial);
+  
+  bench.position.set(0, 11, 0);
+  benchLeg1.position.set(-12.5, 5, 0);
+  benchLeg2.position.set(12.5, 5, 0);
+  group.add( bench, benchLeg1, benchLeg2);
+  return group;
+}
+
+function setViewPoint(v) {
+  switch (v) {
+    case 1:
+      camera.position.set(200, 100, 200);
+      camera.lookAt(new THREE.Vector3(0, 75, 0));
+      break;
+    case 2:
+      camera.position.set(0, 600, 0);
+      camera.lookAt(new THREE.Vector3(0, 75, 0));
+      break;
+    default:
+      break;
+  }
+}
+
+lights.id = 0;
+var lightArray = [];
+ var camera, scene, renderer;
+
+init();
+animate();
+
+function init() {
+
+  scene = new THREE.Scene();
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x888888);
+  document.body.appendChild(renderer.domElement);
+
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 1000);
+  camera.position.set(-600,400,0);
+  camera.lookAt(new THREE.Vector3(0,75, 0));
+  let controls = new THREE.OrbitControls(camera, renderer.domElement);
+  
+
+  ///////////地板,天花板
+
+  var floorTex = new THREE.TextureLoader().load("https://i.imgur.com/WEymGvu.jpg");
+  floorTex.repeat.set(37, 25);
+  floorTex.wrapS = THREE.RepeatWrapping;
+  floorTex.wrapT = THREE.RepeatWrapping;
+
+  var floor = new THREE.Mesh(new THREE.BoxGeometry(510, 510,10), new THREE.MeshLambertMaterial({
+    map: floorTex
+  }));
+  floor.position.set(0, -5, 0);
+  floor.rotation.x = -Math.PI / 2;
+  var ceiling = new THREE.Mesh(new THREE.PlaneGeometry(510, 510), new THREE.MeshLambertMaterial());
+  ceiling.position.set(0, 150, 0);
+  ceiling.rotation.x = Math.PI / 2;
+
+ scene.add(floor, ceiling);
+
+ /////////////////大牆
+
+  var wall = new THREE.Mesh(new THREE.BoxGeometry(510, 150,10), new THREE.MeshLambertMaterial());
+  var wall1 = wall.clone();
+  var wall2 = wall.clone();
+  var wall3 = wall.clone();
+  wall1.position.set(0, 75, -250);
+  wall2.position.set(250, 75, 0);
+  wall2.rotation.y = -Math.PI / 2;
+  wall3.position.set(0, 75, 250);
+  wall3.rotation.y = Math.PI;
+var wall4 = new THREE.Mesh(new THREE.BoxGeometry(250, 150,10), new THREE.MeshLambertMaterial());
+wall4.position.set(-125, 75, 0);
+
+scene.add(wall1, wall2, wall3,wall4);
+
+//////////門牆
+
+  var wallx = new THREE.Mesh(new THREE.BoxGeometry(80, 150,10), new THREE.MeshLambertMaterial());
+  var walla = wallx.clone();
+  walla.position.set(205, 75, 0);
+  var wallb = wallx.clone();
+  wallb.position.set(40, 75, 0);
+  var wallc = new THREE.Mesh(new THREE.BoxGeometry(90,50,10), new THREE.MeshLambertMaterial());  
+  wallc.position.set(125, 125, 0);
+
+scene.add(walla,wallb,wallc);
+
+var walld = wallx.clone();
+  walld.position.set(0, 75, 205);
+  walld.rotation.y = -Math.PI / 2;
+  var walle = wallx.clone();
+  walle.position.set(0, 75, 40);
+  walle.rotation.y = -Math.PI / 2;
+  var wallf = new THREE.Mesh(new THREE.BoxGeometry(90,50,10), new THREE.MeshLambertMaterial());  
+  wallf.position.set(0, 125, 125);
+  wallf.rotation.y = -Math.PI / 2;
+ scene.add(walld,walle,wallf); 
+
+ var walldd = wallx.clone();
+  walldd.position.set(-250, 75, 205);
+  walldd.rotation.y = -Math.PI / 2;
+  var wallee = wallx.clone();
+  wallee.position.set(-250, 75, 40);
+  wallee.rotation.y = -Math.PI / 2;
+  var wallff = new THREE.Mesh(new THREE.BoxGeometry(90,50,10), new THREE.MeshLambertMaterial());  
+  wallff.position.set(-250, 125, 125);
+  wallff.rotation.y = -Math.PI / 2;
+ scene.add(walldd,wallee,wallff); 
+
+var wallg = wallx.clone();
+  wallg.position.set(0, 75, -205);
+  wallg.rotation.y = -Math.PI / 2;
+  var wallh = wallx.clone();
+  wallh.position.set(0, 75, -40);
+  wallh.rotation.y = -Math.PI / 2;
+  var walli = new THREE.Mesh(new THREE.BoxGeometry(90,50,10), new THREE.MeshLambertMaterial());  
+  walli.position.set(0, 125, -125);
+  walli.rotation.y = -Math.PI / 2;
+
+ scene.add(wallg,wallh,walli);
+
+ var wallgg = wallx.clone();
+  wallgg.position.set(-250, 75, -205);
+  wallgg.rotation.y = -Math.PI / 2;
+  var wallhh = wallx.clone();
+  wallhh.position.set(-250, 75, -40);
+  wallhh.rotation.y = -Math.PI / 2;
+  var wallii = new THREE.Mesh(new THREE.BoxGeometry(90,50,10), new THREE.MeshLambertMaterial());  
+  wallii.position.set(-250, 125, -125);
+  wallii.rotation.y = -Math.PI / 2;
+
+ scene.add(wallgg,wallhh,wallii);
+
+/////////////////展示牆
+
+ var wally = new THREE.Mesh(new THREE.BoxGeometry(110, 100,10), new THREE.MeshLambertMaterial()); 
+ var wall01 = wally.clone();
+ wall01.position.set(125, 50, -125);
+
+ var wall02 = wally.clone();
+ wall02.position.set(-125, 50, 125);
+wall02.rotation.y = -Math.PI / 2;
+
+var wallk = new THREE.Mesh(new THREE.BoxGeometry(80, 100,10), new THREE.MeshLambertMaterial());
+var wall03 = wallk.clone();
+  wall03.position.set(-125, 50, -205);
+  wall03.rotation.y = -Math.PI / 2;
+  var wall04 = wallk.clone();
+  wall04.position.set(-125, 50, -40);
+  wall04.rotation.y = -Math.PI / 2;
+
+var wallz = new THREE.Mesh(new THREE.BoxGeometry(60, 100,10), new THREE.MeshLambertMaterial());
+  var wall05 = wallz.clone();
+ wall05.position.set(145, 50, 120);
+
+ var wall06 = wallz.clone();
+ wall06.position.set(120, 50, 145);
+wall06.rotation.y = -Math.PI / 2;
+
+scene.add(wall01,wall02,wall03,wall04,wall05,wall06);
+
+//////////////
+
+let loader = new THREE.TextureLoader();
+  let capMap = loader.load ('https://i.imgur.com/GASakSo.jpg');
+
+  var painting1 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting1.position.set(125,50, -131);
+  painting1.rotation.y = -Math.PI ;
+  var painting2 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting2.position.set(125,50, -119);
+
+  var painting3 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting3.position.set(-119,50, 125);
+ painting3.rotation.y = Math.PI/2 ;
+  var painting4 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting4.position.set(-131,50, 125);
+  painting4.rotation.y = -Math.PI/2 ;
+
+  var painting5 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting5.position.set(-131,50, -205);
+  painting5.rotation.y = -Math.PI/2 ;
+  var painting6 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting6.position.set(-119,50, -205);
+  painting6.rotation.y = Math.PI/2 ;
+  var painting7 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting7.position.set(-131,50, -40);
+  painting7.rotation.y = -Math.PI/2 ;
+  var painting8 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting8.position.set(-119,50, -40);
+  painting8.rotation.y = Math.PI/2 ;
+
+  var painting9 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting9.position.set(145,50, 126);
+  
+  var painting10 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting10.position.set(145,50, 114);
+  painting10.rotation.y = Math.PI ;
+
+  var painting11 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting11.position.set(126,50, 145);
+painting11.rotation.y = Math.PI/2 ;
+
+  var painting12 = new THREE.Mesh (new THREE.PlaneGeometry (35,35), new THREE.MeshBasicMaterial({map:capMap}));
+  painting12.position.set(114,50, 145);
+  painting12.rotation.y = -Math.PI/2 ;
+
+  scene.add (painting1,painting2,painting3,painting4,painting5,painting6,painting7,painting8,painting9,painting10,painting11,painting12);
+
+  // frame ...
+  let frameMap = loader.load ('https://i.imgur.com/Je86MDa.png');
+  var frame1 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame1.position.set(125,50, -131);
+  frame1.rotation.y = -Math.PI ;
+  var frame2 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame2.position.set(125,50, -119);
+
+  var frame3 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame3.position.set(-119,50, 125);
+  frame3.rotation.y = Math.PI/2 ;
+  var frame4 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame4.position.set(-131,50, 125);
+frame4.rotation.y = -Math.PI/2 ;
+
+  var frame5 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame5.position.set(-131,50, -205);
+  frame5.rotation.y = -Math.PI/2 ;
+  var frame6 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame6.position.set(-119,50, -205);
+  frame6.rotation.y = Math.PI/2 ;
+  var frame7 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame7.position.set(-131,50, -40);
+  frame7.rotation.y = -Math.PI/2 ;
+  var frame8 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame8.position.set(-119,50, -40);
+  frame8.rotation.y = Math.PI/2 ;
+
+  var frame9 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame9.position.set(145,50, 126);
+
+  var frame10 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame10.position.set(145,50, 114);
+  frame10.rotation.y = Math.PI ;
+
+  var frame11 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame11.position.set(126,50, 145);
+  frame11.rotation.y = Math.PI/2 ;
+
+  var frame12 = new THREE.Mesh (new THREE.PlaneGeometry (55,55), new THREE.MeshBasicMaterial({map:frameMap, transparent:true}));
+  frame12.position.set(114,50, 145);
+  frame12.rotation.y = -Math.PI/2 ;
+
+  scene.add (frame1,frame2,frame3,frame4,frame5,frame6,frame7,frame8,frame9,frame10,frame11,frame12);
+
+//////////////燈具
+
+ 
+  var lamp1 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,10), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp1.position.set (125,143,-132);
+
+  var lamp2 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp2.position.set (125,143, -118);
+
+  var lamp3 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp3.position.set (-118,143, 125);
+
+  var lamp4 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp4.position.set (-132,143, 125);
+
+  var lamp5 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp5.position.set (-132,143, -205);
+  
+  var lamp6 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp6.position.set (-118,143, -205);
+
+  var lamp7 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp7.position.set (-132,143, -40);
+
+  var lamp8 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp8.position.set (-118,143, -40);
+
+  var lamp9 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp9.position.set (145,143, 127);
+
+  var lamp10 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp10.position.set (145,143, 113);
+
+  var lamp11 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp11.position.set (127,143, 145);
+
+  var lamp12 = new THREE.Mesh (new THREE.CylinderGeometry (5,5,14,20), new THREE.MeshBasicMaterial({color:0x000000}));
+  lamp12.position.set (113,143, 145);
+
+  scene.add (lamp1,lamp2,lamp3,lamp4,lamp5,lamp6,lamp7,lamp8,lamp9,lamp10,lamp11,lamp12);
+  
+//////////////燈
+
+ createLight(new THREE.Vector3(125,136, -132),wall01);
+ createLight(new THREE.Vector3(125,136, -118),wall01);
+ createLight(new THREE.Vector3(-118,136, 125),wall02);
+ createLight(new THREE.Vector3(-132,136, 125),wall02);
+
+ createLight(new THREE.Vector3(-132,136, -205),wall03);
+ createLight(new THREE.Vector3(-118,136, -205),wall03);
+ createLight(new THREE.Vector3(-132,136, -40),wall04);
+ createLight(new THREE.Vector3(-118,136, -40),wall04);
+
+ createLight(new THREE.Vector3(145,136, 127),wall05);
+ createLight(new THREE.Vector3(145,136, 113),wall05);
+ createLight(new THREE.Vector3(127,136, 145),wall06);
+ createLight(new THREE.Vector3(113,136, 145),wall06);
+
+////////////光
+
+const directionalLight =  new THREE.DirectionalLight(0xffffff,0.2);
+scene.add(directionalLight);
+
+var ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
+scene.add(ambientLight);
+
+  const pointLight = new THREE.PointLight(0xffffff, 0.1);
+  pointLight.castShadow = true;
+  var light1 = pointLight.clone();
+  var light2 = pointLight.clone();
+  var light3 = pointLight.clone(); 
+  var light4 = pointLight.clone();
+  var light5 = pointLight.clone();
+  var light6 = pointLight.clone();
+  var light7 = pointLight.clone(); 
+  var light8 = pointLight.clone();
+
+   light1.position.set(200,145,200);
+   light2.position.set(200,145,-200);
+   light3.position.set(-200,145,200);
+   light4.position.set(-200,145,-200);
+
+   light5.position.set(60,145,60);
+   light6.position.set(60,145,-60);
+   light7.position.set(-60,145,60);
+   light8.position.set(-60,145,-60);
+
+  scene.add(light1, light2, light3, light4, light5, light6, light7, light8);
+
+ ////////////長椅
+
+  var bench = buildBench();
+  var bench1 = bench.clone();
+  var bench2 = bench.clone();
+  var bench3 = bench.clone();
+  var bench4 = bench.clone();
+  
+  bench1.position.set(220, 0, 220);
+  bench2.position.set(220, 0, -220);
+  bench3.position.set(-220, 0, -220);
+  bench4.position.set(-220, 0, 220);
+  
+  scene.add(bench1, bench2, bench3, bench4);
+
+ 
+}
+
+function animate() {
+
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+
+}
+</script>>
+  </body>
+
+</html>
+
+
