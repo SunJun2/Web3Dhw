@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-tw">
+
+  <head>
+  
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="cache-control" content="no-cache">
+    
+    <style>
+#container {
+  width: 60vw;
+  height: 60vw;
+  float: left;
+  background-color: pink;
+  margin: 10px;
+}
+
+p {
+  margin: 10px;
+  text-align: justify;
+}
+#info {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+    </style>
+  </head>
+  <body>
+
+<h1 style="font-size:2em; text-align:center; margin:15px"> 
+Homework 4: Patio Design
+</h1>
+
+<hr>
+
+<div id="container">
+</div>
+
+<div style="width:30vw;float:left; margin:10px;background-color:yellow">
+<button id='save'>Save</button><br>
+<button id='clear'>Clear</button><br>
+<button id='restore'>Restore</button>
+<p id='debugMsg'>
+</p>
+</div>
+
+<script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script>
+ 
+var scene, renderer, camera;
+var plane, puck;
+var mouse = new THREE.Vector2();
+var raycaster = new THREE.Raycaster();
+var pucks = [];
+var puckId = 0;
+
+init();
+animate();
+
+$('#save').click( function() {
+
+  // pucks --> puckRecs
+  var recs = [];
+  for (let i = 0; i < pucks.length; i++) {
+    var rec = {};
+    rec.name = pucks[i].name;
+    rec.x = pucks[i].position.x.toFixed(2);
+    rec.z = pucks[i].position.z.toFixed(2);
+    recs.push(rec);
+  }
+
+  // puckRecs --> JSON.stringify --> localStorage
+  var recLog = JSON.stringify(recs);
+  localStorage.setItem('puckLog', recLog);
+
+});
+
+$('#clear').click( function() {
+
+  pucks.forEach( function(puck) {
+    puck.removeFromParent();
+  })
+
+  pucks = [];
+});
+
+$('#restore').click(function() {
+
+  // localStorage --> JSON.parse --> puckRecs
+  var parseLog = JSON.parse(localStorage.getItem('puckLog'));
+  for (let i = 0; i < parseLog.length; i++) {
+    var newPuck = puck.clone();
+    newPuck.position.set(parseLog[i].x, 0, parseLog[i].z);
+    scene.add(newPuck);
+    pucks.push (newPuck);
+  }
+  
+});
+
+function buildBench() {
+  var group = new THREE.Group();
+  
+  var benchTex = new THREE.TextureLoader().load("https://i.imgur.com/WEymGvu.jpg");
+  benchTex.repeat.set(4, 4);
+  benchTex.wrapS = THREE.RepeatWrapping;
+  benchTex.wrapT = THREE.RepeatWrapping;
+  
+  var benchMaterial = new THREE.MeshLambertMaterial({
+    map: benchTex
+  });
+  
+  var bench = new THREE.Mesh(new THREE.BoxGeometry(40, 2, 15), benchMaterial);
+  var benchLeg1 = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 15), benchMaterial);
+  var benchLeg2 = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 15), benchMaterial);
+  
+  bench.position.set(0, 11, 0);
+  benchLeg1.position.set(-12.5, 5, 0);
+  benchLeg2.position.set(12.5, 5, 0);
+  group.add( bench, benchLeg1, benchLeg2);
+  return group;
+}
+
+function init() {
+
+  renderer = new THREE.WebGLRenderer({
+    antialias: true
+  });
+  var ww = $('#container').innerWidth();
+  var hh = $('#container').innerHeight();
+  renderer.setSize(ww, hh);
+  renderer.setClearColor(0x555555);
+  $('#container').append(renderer.domElement);
+
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(45, ww / hh, 1, 10000);
+  camera.position.set (0, 80, 200)
+  camera.lookAt(new THREE.Vector3(0, 0, 0));
+
+  puck = buildBench();
+
+  let controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+
+var ambientLight = new THREE.AmbientLight('white', 0.2);
+  const pointLight = new THREE.PointLight(0xffffff, 1);
+  pointLight.castShadow = true;
+  pointLight.position.set(50, 100, 50);
+  scene.add(ambientLight, pointLight);
+
+  plane = new THREE.Mesh(
+    new THREE.PlaneGeometry(200, 200, 8, 8),
+    new THREE.MeshBasicMaterial({
+      color: 0xff0000,
+      opacity: 0,
+      transparent: true
+    }));
+  plane.rotation.x = -Math.PI / 2;
+  plane.material.visible = false; // invisible, for picking only
+  scene.add(plane);
+
+var loader = new THREE.TextureLoader();
+  var floorGroup = new THREE.Group();
+  var grassMap = loader.load ('https://i.imgur.com/ADGE9Ix.jpg');
+  var grassAlpha = loader.load ('https://i.imgur.com/mGdIosi.png?1');
+  var grassFloor = new THREE.Mesh (new THREE.PlaneGeometry (200,200), new THREE.MeshBasicMaterial({map: grassMap, transparent:true, alphaMap: grassAlpha}));
+
+  var stoneMap = loader.load ('https://i.imgur.com/T1ZbCDb.jpg');
+  var stoneAlpha = loader.load ('https://i.imgur.com/D9alJjG.png');
+  var stoneFloor = new THREE.Mesh (new THREE.PlaneGeometry (200,200), new THREE.MeshBasicMaterial({map: stoneMap, transparent:true, alphaMap: stoneAlpha}));
+
+  floorGroup.add (grassFloor, stoneFloor);
+  floorGroup.rotation.x = -Math.PI / 2;
+  scene.add (floorGroup);
+  window.addEventListener('resize', onWindowResize, false);
+  $('#container').on("pointerdown", onDocumentMouseDown);
+  //window.addEventListener('mousemove', onDocumentMouseMove, false);
+}
+
+function onWindowResize() {
+  var ww = $('#container').innerWidth();
+  var hh = $('#container').innerHeight();
+  camera.aspect = ww / hh;
+  camera.updateProjectionMatrix();
+  renderer.setSize(ww, hh);
+}
+
+function onDocumentMouseDown(event) {
+
+  var viewportPos = $('#container').get(0).getBoundingClientRect();
+  mouse.x = ((event.clientX - viewportPos.left) / $('#container').innerWidth()) * 2 - 1;
+  mouse.y = -((event.clientY - viewportPos.top) / $('#container').innerHeight()) * 2 + 1;
+
+
+  raycaster.setFromCamera(mouse, camera);
+  var intersects = raycaster.intersectObject(plane);
+  if (intersects.length > 0) {
+    var newPuck = puck.clone();
+    newPuck.position.copy(intersects[0].point);
+
+    newPuck.name = 'puck' + puckId++;
+
+    scene.add(newPuck);
+    pucks.push(newPuck);
+  } 
+  
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  render();
+
+  $('#debugMsg').text(pucks.length + ' pucks on plane');
+
+}
+
+function render() {
+  renderer.render(scene, camera);
+}
+
+</script>>
+  </body>
+
+</html>
+
+
