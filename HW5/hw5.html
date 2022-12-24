@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-tw">
+
+  <head>
+  
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="cache-control" content="no-cache">
+    
+    <style>
+#info {
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  padding: 10px;
+  text-align: center;
+  color: #ffff00
+}
+
+body {
+  overflow: hidden;
+}
+
+    </style>
+  </head>
+  <body>
+
+<h1 style="font-size:2em; text-align:center; margin:15px"> 
+Homework 5: node.js
+</h1>
+
+<hr>
+
+<div id="container">
+</div>
+
+<div style="width:30vw;float:right; margin-right:2vw;  padding:2vw; background-color:orange; border-radius: 1vmin">
+    radius <input type="range" min="0" max="100" value="50" class="slider" id="radiusRange"><br>
+
+
+<button id='startPause'>Start/Pause</button>
+<p id='debugMsg'>
+</p>
+</div>
+
+<script src="https://threejs.org/build/three.min.js"></script>
+<script src="https://threejs.org/examples/js/controls/OrbitControls.js"></script>
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script>
+
+$("#radiusRange").on('input', function() {
+  circle.scale.x = this.value / 50;
+  circle.scale.y = this.value / 50;
+  renderer.render(scene, camera);
+});
+
+ $("#startPause").click(function() {
+  runningStatus = !runningStatus;
+  if (runningStatus) {
+    
+    requestAnimationFrame(animate);
+  } else {
+    
+    cancelAnimationFrame(workingAni);
+  }
+  console.log(runningStatus);
+});
+
+var camera, scene, renderer;
+var circle, pos, vel;
+var runningStatus = false;
+
+
+init();
+animate();
+cancelAnimationFrame(workingAni);
+
+function init() {
+
+  scene = new THREE.Scene();
+
+  renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x888888);
+  document.body.appendChild(renderer.domElement);
+
+  camera = new THREE.OrthographicCamera(-100, 100, 100, -100, -10, 100);
+  camera.position.z = 50;
+
+  ////////////////////////////////////////////////////////
+  var gridXZ = new THREE.GridHelper(200, 20, 'red', 'white');
+  gridXZ.rotation.x = Math.PI / 2;
+  scene.add(gridXZ);
+
+
+  let geometry = new THREE.BufferGeometry();
+  let points = [];
+  points.push(
+    new THREE.Vector3(-80, -80, 0),
+    new THREE.Vector3(80, -80, 0),
+    new THREE.Vector3(80, 80, 0),
+    new THREE.Vector3(-80, 80, 0),
+    new THREE.Vector3(-80, -80, 0));
+  geometry.setFromPoints(points);
+  var border = new THREE.Line(geometry, new THREE.LineBasicMaterial({
+    color: 'blue'
+  }));
+  scene.add(border);
+
+  circle = new THREE.Mesh(new THREE.CircleGeometry(10, 20, 20), new THREE.MeshBasicMaterial({
+    color: 'yellow'
+  }));
+  scene.add(circle);
+
+  pos = new THREE.Vector3();
+  vel = new THREE.Vector3(10, 20);
+
+  
+}
+
+function animate() {
+  var dt = 0.05;
+  workingAni = requestAnimationFrame(animate);
+  //requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+
+  pos.add(vel.clone().multiplyScalar(dt));
+  if (pos.x > 70 || pos.x < -70)
+    vel.x *= -1;
+  if (pos.y > 70 || pos.y < -70)
+    vel.y *= -1;
+
+  if (pos.x > 0)
+    circle.material.color.set('cyan');
+  else
+    circle.material.color.set('yellow');
+
+  circle.position.copy(pos);
+
+
+}
+
+
+</script>>
+  </body>
+
+</html>
